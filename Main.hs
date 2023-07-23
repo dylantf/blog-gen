@@ -9,6 +9,6 @@ myHtml :: Html
 myHtml =
   html_
     "Hello title"
-    ( h1_ "Dylan's Blog"
+    ( h_ 1 "Dylan's Blog"
         <> (p_ "Welcome to..." <> p_ "my blog!")
     )
