@@ -4,6 +4,9 @@ newtype Html = Html String
 
 newtype Structure = Structure String
 
+instance Semigroup Structure where
+  (<>) a b = Structure (getStructureString a <> getStructureString b)
+
 type Title = String
 
 getStructureString :: Structure -> String
@@ -38,15 +41,12 @@ ol_ = Structure . el "ol" . concat . map (el "li" . getStructureString)
 code_ :: String -> Structure
 code_ = Structure . el "pre" . escape
 
-append_ :: Structure -> Structure -> Structure
-append_ (Structure a) (Structure b) = Structure (a <> b)
-
 render :: Html -> String
 render (Html document) = document
 
 escape :: String -> String
-escape =
-  let
+escape = 
+  let 
     escapeChar c =
       case c of
         '<' -> "&lt;"
@@ -55,5 +55,5 @@ escape =
         '"' -> "&quot;"
         '\'' -> "&#39;"
         _ -> [c]
-   in
+  in
     concatMap escapeChar
