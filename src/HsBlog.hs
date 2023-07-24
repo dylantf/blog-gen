@@ -1,11 +1,10 @@
-module Main (main) where
+module HsBlog (main, process) where
 
+import HsBlog.Convert (convert)
+import HsBlog.Html qualified as Html
+import HsBlog.Markup qualified as Markup
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
-
-import Convert (convert)
-import Html qualified
-import Markup qualified
 
 main :: IO ()
 main = do

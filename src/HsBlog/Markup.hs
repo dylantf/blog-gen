@@ -1,4 +1,4 @@
-module Markup (Document, Structure (..), parse) where
+module HsBlog.Markup (Document, Structure (..), parse) where
 
 import Data.Maybe (maybeToList)
 import Numeric.Natural
