@@ -7,13 +7,13 @@ convertStructure :: Markup.Structure -> Html.Structure
 convertStructure structure =
   case structure of
     Markup.Heading level txt ->
-      Html.h_ level txt
+      Html.h_ level $ Html.txt_ txt
     Markup.Paragraph p ->
-      Html.p_ p
+      Html.p_ $ Html.txt_ p
     Markup.UnorderedList list ->
-      Html.ul_ $ map Html.p_ list
+      Html.ul_ $ map (Html.p_ . Html.txt_) list
     Markup.OrderedList list ->
-      Html.ol_ $ map Html.p_ list
+      Html.ol_ $ map (Html.p_ . Html.txt_) list
     Markup.CodeBlock list ->
       Html.code_ $ unlines list
 
