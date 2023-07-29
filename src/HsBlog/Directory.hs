@@ -5,27 +5,28 @@ import Control.Monad (void, when)
 import Data.List (partition)
 import Data.Traversable (for)
 import HsBlog.Convert (convert, convertStructure)
+import HsBlog.Env (Env (..))
 import HsBlog.Html qualified as Html
 import HsBlog.Markup qualified as Markup
-import System.Directory
-  ( copyFile,
-    createDirectory,
-    doesDirectoryExist,
-    listDirectory,
-    removeDirectoryRecursive,
-  )
+import System.Directory (
+  copyFile,
+  createDirectory,
+  doesDirectoryExist,
+  listDirectory,
+  removeDirectoryRecursive,
+ )
 import System.Exit (exitFailure)
-import System.FilePath
-  ( takeBaseName,
-    takeExtension,
-    takeFileName,
-    (<.>),
-    (</>),
-  )
+import System.FilePath (
+  takeBaseName,
+  takeExtension,
+  takeFileName,
+  (<.>),
+  (</>),
+ )
 import System.IO (hPutStrLn, stderr)
 
-buildIndex :: [(FilePath, Markup.Document)] -> Html.Html
-buildIndex files =
+buildIndex :: Env -> [(FilePath, Markup.Document)] -> Html.Html
+buildIndex env files =
   let previews =
         map
           ( \(file, doc) ->
@@ -39,16 +40,19 @@ buildIndex files =
           )
           files
    in Html.html_
-        "Blog"
+        ( Html.title_ (eBlogName env)
+            <> Html.stylesheet_ (eStylesheetPath env)
+        )
         ( Html.h_ 1 (Html.link_ "index.html" (Html.txt_ "Blog"))
             <> Html.h_ 2 (Html.txt_ "Posts")
             <> mconcat previews
         )
 
--- | Copy files from one directory to another, converting .txt files to .html
---   Errors are logged to stderr
---
--- May throw an exception on output directory creation.
+{- | Copy files from one directory to another, converting .txt files to .html
+  Errors are logged to stderr
+
+May throw an exception on output directory creation.
+-}
 convertDirectory :: FilePath -> FilePath -> IO ()
 convertDirectory inputDir outputDir = do
   DirContents filesToProcess filesToCopy <- getDirFilesAndContent inputDir
@@ -59,8 +63,8 @@ convertDirectory inputDir outputDir = do
   putStrLn "Done!"
 
 data DirContents = DirContents
-  { dcFilesToProcess :: [(FilePath, String)],
-    dcFilesToCopy :: [FilePath]
+  { dcFilesToProcess :: [(FilePath, String)]
+  , dcFilesToCopy :: [FilePath]
   }
 
 getDirFilesAndContent :: FilePath -> IO DirContents
@@ -70,8 +74,8 @@ getDirFilesAndContent inputDir = do
   txtFilesAndContent <- applyIoOnList readFile txtFiles >>= filterAndReportFailures
   pure $
     DirContents
-      { dcFilesToProcess = txtFilesAndContent,
-        dcFilesToCopy = otherFiles
+      { dcFilesToProcess = txtFilesAndContent
+      , dcFilesToCopy = otherFiles
       }
 
 applyIoOnList :: (a -> IO b) -> [a] -> IO [(a, Either String b)]
