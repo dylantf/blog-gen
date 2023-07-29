@@ -5,6 +5,7 @@
 module HsBlog.Html.Internal where
 
 import Numeric.Natural
+import Prelude hiding (head)
 
 newtype Html = Html String
 
@@ -19,11 +20,11 @@ newtype Head = Head String
 -- * EDSL
 
 html_ :: Head -> Structure -> Html
-html_ title content =
+html_ (Head head) content =
   Html
     ( el
         "html"
-        ( el "head" (el "title" (escape title))
+        ( el "head" head
             <> el "body" (getStructureString content)
         )
     )

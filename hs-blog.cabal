@@ -25,10 +25,12 @@ library
         HsBlog.Html
         HsBlog.Html.Internal
         HsBlog.Markup
+        HsBlog.Env
     build-depends:   
         base,
         directory,
-        filepath
+        filepath,
+        mtl
     hs-source-dirs:   src
 
 executable hs-blog
@@ -42,6 +44,7 @@ executable hs-blog
         optparse-applicative,
         directory,
         filepath,
+        mtl,
         hs-blog
     ghc-options:
         -O    

@@ -1,7 +1,7 @@
 module HsBlog.Directory (buildIndex, convertDirectory) where
 
 import Control.Exception (SomeException (..), catch, displayException)
-import Control.Monad (void, when)
+import Control.Monad.Reader
 import Data.List (partition)
 import Data.Traversable (for)
 import HsBlog.Convert (convert, convertStructure)
@@ -25,8 +25,9 @@ import System.FilePath (
  )
 import System.IO (hPutStrLn, stderr)
 
-buildIndex :: Env -> [(FilePath, Markup.Document)] -> Html.Html
-buildIndex env files =
+buildIndex :: [(FilePath, Markup.Document)] -> Reader Env Html.Html
+buildIndex files = do
+  env <- ask
   let previews =
         map
           ( \(file, doc) ->
@@ -39,25 +40,26 @@ buildIndex env files =
                   Html.h_ 3 (Html.link_ file (Html.txt_ file))
           )
           files
-   in Html.html_
-        ( Html.title_ (eBlogName env)
-            <> Html.stylesheet_ (eStylesheetPath env)
-        )
-        ( Html.h_ 1 (Html.link_ "index.html" (Html.txt_ "Blog"))
-            <> Html.h_ 2 (Html.txt_ "Posts")
-            <> mconcat previews
-        )
+  pure $
+    Html.html_
+      ( Html.title_ (eBlogName env)
+          <> Html.stylesheet_ (eStylesheetPath env)
+      )
+      ( Html.h_ 1 (Html.link_ "index.html" (Html.txt_ "Blog"))
+          <> Html.h_ 2 (Html.txt_ "Posts")
+          <> mconcat previews
+      )
 
 {- | Copy files from one directory to another, converting .txt files to .html
   Errors are logged to stderr
 
 May throw an exception on output directory creation.
 -}
-convertDirectory :: FilePath -> FilePath -> IO ()
-convertDirectory inputDir outputDir = do
+convertDirectory :: Env -> FilePath -> FilePath -> IO ()
+convertDirectory env inputDir outputDir = do
   DirContents filesToProcess filesToCopy <- getDirFilesAndContent inputDir
   createOutputDirectoryOrExit outputDir
-  let outputHtmls = txtsToRenderedHtml filesToProcess
+  let outputHtmls = runReader (txtsToRenderedHtml filesToProcess) env
   copyFiles outputDir filesToCopy
   writeFiles outputDir outputHtmls
   putStrLn "Done!"
@@ -118,18 +120,21 @@ createOutputDirectory path = do
   when create (createDirectory path)
   pure create
 
-txtsToRenderedHtml :: [(FilePath, String)] -> [(FilePath, String)]
-txtsToRenderedHtml txtFiles =
+txtsToRenderedHtml :: [(FilePath, String)] -> Reader Env [(FilePath, String)]
+txtsToRenderedHtml txtFiles = do
   let txtOutputFiles = map toOutputMarkupFile txtFiles
-      index = ("index.html", buildIndex txtOutputFiles)
-   in map (fmap Html.render) (index : map convertFile txtOutputFiles)
+  index <- (,) "index.html" <$> buildIndex txtOutputFiles
+  htmlPages <- traverse convertFile txtOutputFiles
+  pure $ map (fmap Html.render) (index : htmlPages)
 
 toOutputMarkupFile :: (FilePath, String) -> (FilePath, Markup.Document)
 toOutputMarkupFile (file, content) =
   (takeBaseName file <.> "html", Markup.parse content)
 
-convertFile :: (FilePath, Markup.Document) -> (FilePath, Html.Html)
-convertFile (path, doc) = (path, convert path doc)
+convertFile :: (FilePath, Markup.Document) -> Reader Env (FilePath, Html.Html)
+convertFile (path, doc) = do
+  env <- ask
+  pure (path, convert env (takeBaseName path) doc)
 
 copyFiles :: FilePath -> [FilePath] -> IO ()
 copyFiles outputDir files = do

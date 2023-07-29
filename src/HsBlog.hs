@@ -6,6 +6,7 @@ module HsBlog
 where
 
 import HsBlog.Convert (convert)
+import HsBlog.Env (Env, defaultEnv)
 import HsBlog.Html qualified as Html
 import HsBlog.Markup qualified as Markup
 import System.IO
@@ -15,8 +16,8 @@ convertSingle title input output = do
   content <- hGetContents input
   hPutStrLn output (process title content)
 
-convertDirectory :: FilePath -> FilePath -> IO ()
+convertDirectory :: Env -> FilePath -> FilePath -> IO ()
 convertDirectory = error "Not implemented"
 
-process :: Html.Title -> String -> String
-process title = Html.render . convert title . Markup.parse
+process :: String -> String -> String
+process title = Html.render . convert defaultEnv title . Markup.parse
